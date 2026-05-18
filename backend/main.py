@@ -152,3 +152,31 @@ def get_fighter_fights(fighter_name: str):
     cur.close()
     conn.close()
     return fights
+
+@app.get("/fighters/name/{fighter_name}/record")
+def get_fighter_record(fighter_name: str):
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    
+    cur.execute("""
+        SELECT 
+            me.fighter_id,
+            COUNT(*) AS total_fights,
+            COUNT(CASE WHEN f.winner_id = me.fighter_id THEN 1 END) AS wins,
+            COUNT(CASE WHEN f.winner_id != me.fighter_id AND f.winner_id IS NOT NULL THEN 1 END) AS losses,
+            COUNT(CASE WHEN f.winner_id IS NULL THEN 1 END) AS no_contests
+        FROM fighters me
+        JOIN fight_stats fs ON fs.fighter_id = me.fighter_id
+        JOIN fights f ON f.fight_id = fs.fight_id
+        WHERE LOWER(me.name) = LOWER(%s)
+        GROUP BY me.fighter_id
+    """, (fighter_name,))
+    
+    record = cur.fetchone()
+    cur.close()
+    conn.close()
+    
+    if not record:
+        return {"wins": 0, "losses": 0, "no_contests": 0}
+    
+    return record
