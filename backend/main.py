@@ -120,3 +120,35 @@ def get_fighters_by_weightclass(weight_class: str):
     cur.close()
     conn.close()
     return fighters
+
+@app.get("/fighters/{fighter_name}/fights")
+def get_fighter_fights(fighter_name: str):
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    
+    cur.execute("""
+        SELECT 
+            f.fight_id,
+            e.name AS event_name,
+            e.date AS event_date,
+            f.weight_class,
+            f.winner_id,
+            f.method,
+            f.round,
+            f.time,
+            opp.fighter_id AS opponent_id,
+            opp.name AS opponent_name
+        FROM fights f
+        JOIN events e ON f.event_id = e.event_id
+        JOIN fight_stats fs ON fs.fight_id = f.fight_id 
+        JOIN fighters me ON me.fighter_id = fs.fighter_id
+        JOIN fight_stats fs2 ON fs2.fight_id = f.fight_id AND fs2.fighter_id != me.fighter_id
+        JOIN fighters opp ON opp.fighter_id = fs2.fighter_id
+        WHERE LOWER(me.name) = LOWER(%s)
+        ORDER BY e.date DESC
+    """, (fighter_name,))
+    
+    fights = cur.fetchall()
+    cur.close()
+    conn.close()
+    return fights
