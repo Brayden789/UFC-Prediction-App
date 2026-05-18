@@ -10,7 +10,7 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 # --- CREATE THE APP --- creates fastAPI
 app = FastAPI(title="UFC Prediction API")
 
-# --- CORS MIDDLEWARE ---
+# --- CORS MIDDLEWARE --- connects frontend to backend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -65,3 +65,58 @@ def get_fighter(fighter_id: int):
     if fighter is None:
         raise HTTPException(status_code=404, detail="Fighter not found")
     return fighter
+
+@app.get("/weightclasses")#when this happens on the frontend it will trigger this function to run and return the weight classes in the database
+def get_weightclasses():
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute("""
+        SELECT DISTINCT weight_class 
+        FROM fights 
+        WHERE weight_class IN (
+            'Heavyweight Bout',
+            'Light Heavyweight Bout',
+            'Middleweight Bout',
+            'Welterweight Bout',
+            'Lightweight Bout',
+            'Featherweight Bout',
+            'Bantamweight Bout',
+            'Flyweight Bout',
+            'Women''s Strawweight Bout',
+            'Women''s Flyweight Bout',
+            'Women''s Bantamweight Bout',
+            'Women''s Featherweight Bout'
+        )
+        ORDER BY weight_class
+    """)#this selects weight classes from only the ones we wll use an not ones from other organizations or non-standard weight classes that may be in the dataset
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    # Clean up the labels before returning, so insead of "Heavyweight Bout" it just returns "Heavyweight"
+    cleaned = []
+    for row in rows:
+        label = row["weight_class"].replace(" Bout", "").replace("Women's ", "Women's ")
+        cleaned.append({"weight_class": label})
+    
+    return cleaned
+
+@app.get("/fighters/weightclass/{weight_class}")#when this happens on the frontend it will trigger this function to run and return the fighters in the database that match the weight class
+def get_fighters_by_weightclass(weight_class: str):
+    # Convert clean name back to database format
+    db_weight_class = weight_class + " Bout"
+    
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute("""
+        SELECT DISTINCT f.fighter_id, f.name, f.stance, f.height, f.weight, f.reach
+        FROM fighters f
+        JOIN fight_stats fs ON f.fighter_id = fs.fighter_id
+        JOIN fights fi ON fs.fight_id = fi.fight_id
+        WHERE fi.weight_class = %s
+        ORDER BY f.name
+    """, (db_weight_class,))#we use JOIN here to get all the fighters that have fought in that weight class, even if they are not currently in that weight class or have only fought in it once
+    fighters = cur.fetchall()
+    cur.close()
+    conn.close()
+    return fighters
