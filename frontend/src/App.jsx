@@ -1,8 +1,19 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import Navbar from './components/Navbar'
+
 function App() {
   return (
-    <div className="bg-gray-900 min-h-screen flex items-center justify-center">
-      <h1 className="text-white text-4xl font-bold">UFC Prediction App</h1>
-    </div>
+    <BrowserRouter>
+      <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh' }}>
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<div style={{ color: 'white', padding: '32px' }}>Home</div>} />
+          <Route path="/fighters" element={<div style={{ color: 'white', padding: '32px' }}>Fighters</div>} />
+          <Route path="/fighters/:id" element={<div style={{ color: 'white', padding: '32px' }}>Profile</div>} />
+          <Route path="/predict" element={<div style={{ color: 'white', padding: '32px' }}>Predict</div>} />
+        </Routes>
+      </div>
+    </BrowserRouter>
   )
 }
 
