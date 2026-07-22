@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-    baseURL: 'https://localhost:8000',
+    baseURL: 'http://localhost:8000',
 })
 
 //Creates get fighter fucntion that has a limit and offset parameter to get a list of fighters from the API 

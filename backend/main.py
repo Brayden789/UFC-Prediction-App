@@ -48,7 +48,14 @@ def get_fighters(limit: int = 20, offset: int = 0):
 def search_fighters(name: str):
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cur.execute("SELECT * FROM fighters WHERE name ILIKE %s ORDER BY name LIMIT 20", (f"%{name}%",))
+    cur.execute("""
+    SELECT * FROM fighters
+    WHERE name ILIKE %s
+    ORDER BY
+        CASE WHEN name ILIKE %s THEN 0 ELSE 1 END,
+        name
+    LIMIT 20
+""", (f"%{name}%", f"{name}%"))
     fighters = cur.fetchall()
     cur.close()
     conn.close()
@@ -121,7 +128,7 @@ def get_fighters_by_weightclass(weight_class: str):
     conn.close()
     return fighters
 
-@app.get("/fighters/{fighter_name}/fights")
+@app.get("/fighters/{fighter_name}/fights")#when this happens on the frontend it will trigger this function to run and return the fights in the database that match the fighter_name
 def get_fighter_fights(fighter_name: str):
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -153,7 +160,7 @@ def get_fighter_fights(fighter_name: str):
     conn.close()
     return fights
 
-@app.get("/fighters/name/{fighter_name}/record")
+@app.get("/fighters/name/{fighter_name}/record")#when this happens on the frontend it will trigger this function to run and return the record of the fighter in the database that matches the fighter_name
 def get_fighter_record(fighter_name: str):
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
