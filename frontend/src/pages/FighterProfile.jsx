@@ -17,30 +17,49 @@ function FighterProfile() {
   }, [id])
   //has id in the box beacuse it needs to load tghe fighter data again when the page is loaded to a new fighter
 
-  const loadFighterData = async () => {
-    setLoading(true)
-    try {
-      // First get the fighter's basic info using their ID
-      const fighterRes = await getFighter(id)
-      setFighter(fighterRes.data)
+const loadFighterData = async () => {
+  setLoading(true)
+  try {
+    // First get the fighter's basic info using their ID
+    const fighterRes = await getFighter(id)
+    setFighter(fighterRes.data)
 
-      // The record and fights endpoints need the fighter's NAME, not ID
-      // so we use the name we just got back from getFighter
-      const name = fighterRes.data.name
+    // The record and fights endpoints need the fighter's NAME, not ID
+    // so we use the name we just got back from getFighter
+    const name = fighterRes.data.name
 
-      const [recordRes, fightsRes] = await Promise.all([
-        getFighterRecord(name),
-        getFighterFights(name),
-      ])
+    const [recordRes, fightsRes] = await Promise.all([
+      getFighterRecord(name),
+      getFighterFights(name),
+    ])
 
-      setRecord(recordRes.data)
-      setFights(fightsRes.data)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
+    setRecord(recordRes.data)
+    setFights(fightsRes.data)
+
+    // Fighter's weight_class field is null in the DB, but each fight
+    if (fightsRes.data.length > 0) {
+  // Extract just the division name from strings like "UFC Light Heavyweight Title Bout"
+  // by removing "UFC", "Title Bout", "Interim", and "Bout"
+  const cleanedClasses = fightsRes.data.map(fight =>
+    fight.weight_class
+      .replace('UFC', '')
+      .replace('Interim', '')
+      .replace('Title Bout', '')
+      .replace('Bout', '')
+      .trim()
+  )
+
+  // Get only the unique divisions (in case a fighter has fought in multiple)
+  const uniqueClasses = [...new Set(cleanedClasses)]
+
+  setFighter(prev => ({ ...prev, weight_class: uniqueClasses.join(' / ') }))
+}
+  } catch (err) {
+    console.error(err)
+  } finally {
+    setLoading(false)
   }
+}
 //we make sure to check these states before we try to render a page aswell
   if (loading) {
     return <p style={{ color: 'var(--muted)', textAlign: 'center', padding: '64px' }}>Loading...</p>
@@ -107,7 +126,7 @@ function FighterProfile() {
             </div>
             <div>
               <div style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '32px', color: 'var(--gold)' }}>
-                {record.total}
+                {record.total_fights}
               </div>
               <div style={{ color: 'var(--muted)', fontSize: '12px', letterSpacing: '0.1em' }}>TOTAL FIGHTS</div>
             </div>
@@ -147,7 +166,7 @@ function FighterProfile() {
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontWeight: '700' }}>
-                  vs {fight.opponent || 'Unknown'}
+                  vs {fight.opponent_name || 'Unknown'}
                 </div>
                 <div style={{ color: 'var(--muted)', fontSize: '13px' }}>
                   {fight.method || ''}

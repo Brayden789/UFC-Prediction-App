@@ -26,7 +26,7 @@ export const getFightersByWeightClass = (weightClass) =>
 
 //Creates a get fighter fights function that gets a list of fights for a fighter from the API
 export const getFighterFights = (name) =>
-  api.get(`/fighters/name/${name}/fights`)
+  api.get(`/fighters/${name}/fights`)
 
 //Creates a get fighter record function that gets a fighter's record from their name from the API
 export const getFighterRecord = (name) =>
