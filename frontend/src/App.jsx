@@ -3,6 +3,7 @@ import Navbar from './components/Navbar'
 import Home from './pages/Home'
 import Fighters from './pages/Fighters'
 import FighterProfile from './pages/FighterProfile'
+import Predict from './pages/Predict'
 
 function App() {
   return (
@@ -13,7 +14,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/fighters" element={<Fighters />} />
           <Route path="/fighters/:id" element={<FighterProfile />} />
-          <Route path="/predict" element={<div style={{ color: 'white', padding: '32px' }}>Predict</div>} />
+          <Route path="/predict" element={<Predict />} />
         </Routes>
       </div>
     </BrowserRouter>
