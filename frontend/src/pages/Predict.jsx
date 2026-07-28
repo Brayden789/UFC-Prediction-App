@@ -18,6 +18,7 @@ function Predict() {
   const [resultsB, setResultsB] = useState([])
   // State variable to hold fighters filtered by selected weight class
   const [weightClassFighters, setWeightClassFighters] = useState([])
+  const [prediction, setPrediction] = useState(null)
 
   // Fetch weight classes once when the page loads, same pattern as the Fighters page
 useEffect(() => {
@@ -25,7 +26,13 @@ useEffect(() => {
     .then(res => setWeightClasses(res.data))
     .catch(err => console.error(err))
 }, [])
+const handlePredict = () => {
+// this is just lpaceholder logic for no whne i do the actual prediction model it will be replaced with the actual model logic
+  const winner = Math.random() > 0.5 ? fighterA : fighterB
+  const confidence = Math.floor(Math.random() * 30) + 60 // random number between 60-89
 
+  setPrediction({ winner, confidence })
+}
 
 const handleSelectWeightClass = async (weightClass) => {
   setSelectedWeightClass(weightClass)
@@ -51,9 +58,8 @@ const handleSearchA = async (e) => {
     setResultsA([])
     return
   }
-
+//make sure its weight class mode if it is then filter the fighters by the weight class and then filter by the search query if its not then just search the api for the fighter
   if (mode === 'weightclass') {
-    // Filter the already-loaded weight class fighters locally instead of calling the API
     const filtered = weightClassFighters.filter(fighter =>
       fighter.name.toLowerCase().includes(value.toLowerCase())
     )
@@ -259,9 +265,72 @@ const selectFighterB = (fighter) => {
               ))}
             </div>
           )}
-        </div>
+</div>
 
       </div>
+
+      {/* VS Display - only shows once both fighters are selected */}
+      {fighterA && fighterB && (
+        <div style={{
+          backgroundColor: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: '4px',
+          padding: '32px',
+          textAlign: 'center',
+          marginBottom: '24px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '32px' }}>
+            <h2 style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '32px' }}>
+              {fighterA.name}
+            </h2>
+            <span style={{ color: 'var(--red)', fontFamily: 'Bebas Neue, sans-serif', fontSize: '24px' }}>
+              VS
+            </span>
+            <h2 style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '32px' }}>
+              {fighterB.name}
+            </h2>
+          </div>
+
+          <button
+            onClick={handlePredict}
+            style={{
+              marginTop: '24px',
+              padding: '12px 32px',
+              backgroundColor: 'var(--red)',
+              border: 'none',
+              borderRadius: '4px',
+              color: 'white',
+              fontFamily: 'Bebas Neue, sans-serif',
+              fontSize: '18px',
+              letterSpacing: '0.05em',
+              cursor: 'pointer',
+            }}
+          >
+            PREDICT WINNER
+          </button>
+        </div>
+      )}
+
+      {prediction && (
+        <div style={{
+          backgroundColor: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderLeft: '4px solid var(--gold)',
+          borderRadius: '4px',
+          padding: '32px',
+          textAlign: 'center',
+        }}>
+          <p style={{ color: 'var(--muted)', fontSize: '13px', letterSpacing: '0.15em', marginBottom: '8px' }}>
+            PREDICTED WINNER
+          </p>
+          <h2 style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '40px', color: 'var(--gold)', marginBottom: '8px' }}>
+            {prediction.winner.name}
+          </h2>
+          <p style={{ color: 'var(--muted)', fontSize: '15px' }}>
+            {prediction.confidence}% confidence
+          </p>
+        </div>
+      )}
 
     </div>
   )
