@@ -5,6 +5,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
 
 #load file and clea up the drasw
 df = pd.read_csv("database/data/data.csv")
@@ -38,6 +39,21 @@ model.fit(X_train_scaled, y_train)
 
 #test the data on the test data and get the predictions
 predictions = model.predict(X_test_scaled)
+
+rf_model = RandomForestClassifier(
+    n_estimators=100,       # 100 trees
+    class_weight='balanced_subsample', # same red blue balance as logistic regression
+    random_state=42          # makes the "randomness" repeatable
+)
+rf_model.fit(X_train, y_train)
+
+rf_predictions = rf_model.predict(X_test)
+
+rf_accuracy = accuracy_score(y_test, rf_predictions)
+print("\n--- Random Forest ---")
+print("Accuracy:", rf_accuracy)
+print("Confusion Matrix:")
+print(confusion_matrix(y_test, rf_predictions))
 
 
 #get the grade and print it out
