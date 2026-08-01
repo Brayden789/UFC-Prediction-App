@@ -33,7 +33,7 @@ X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
 #this trains the model on the traning data
-model = LogisticRegression(max_iter=1000)
+model = LogisticRegression(max_iter=1000, class_weight="balanced")
 model.fit(X_train_scaled, y_train)
 
 #test the data on the test data and get the predictions
