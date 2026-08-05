@@ -3,7 +3,7 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, confusion_matrix
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 import joblib
@@ -11,13 +11,24 @@ import joblib
 #load file and clea up the drasw
 df = pd.read_csv("database/data/data.csv")
 df = df[df["Winner"] != "Draw"]
-#drop the columns that are not useful for the model
+#use only these colums because it all we can connect ti the live page
 y = df["Winner"]
-columns_to_drop = [
-    "Winner", "R_fighter", "B_fighter", "Referee", "date",
-    "location", "weight_class", "R_Stance", "B_Stance"
+feature_columns = [
+    "R_avg_SIG_STR_pct", "B_avg_SIG_STR_pct",
+    "R_avg_SIG_STR_landed", "B_avg_SIG_STR_landed",
+    "R_avg_TOTAL_STR_landed", "B_avg_TOTAL_STR_landed",
+    "R_avg_TD_pct", "B_avg_TD_pct",
+    "R_avg_TD_landed", "B_avg_TD_landed",
+    "R_avg_CTRL_time(seconds)", "B_avg_CTRL_time(seconds)",
+    "R_Height_cms", "B_Height_cms",
+    "R_Reach_cms", "B_Reach_cms",
+    "R_Weight_lbs", "B_Weight_lbs",
+    "R_age", "B_age",
+    "R_wins", "B_wins",
+    "R_losses", "B_losses",
+    "R_current_win_streak", "B_current_win_streak"
 ]
-X = df.drop(columns=columns_to_drop)
+X = df[feature_columns]
 X = X.fillna(0)
 
 #swap red and blue for 1s and 0s
@@ -27,7 +38,7 @@ y = y.map({"Red": 1, "Blue": 0})
 #Train/test split (same as before)
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
-)\
+)
 
 #this puts every column on the same scale so the model isnt just trained by the largest numbers
 scaler = StandardScaler()
@@ -62,6 +73,9 @@ predictions = model.predict(X_test_scaled)
 #get the grade and print it out
 accuracy = accuracy_score(y_test, predictions)
 print("Accuracy:", accuracy)
+
+balanced_acc = balanced_accuracy_score(y_test, predictions)
+print("Balanced Accuracy:", balanced_acc)
 
 print("\nConfusion Matrix:")
 print(confusion_matrix(y_test, predictions))
