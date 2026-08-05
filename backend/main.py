@@ -187,3 +187,43 @@ def get_fighter_record(fighter_name: str):
         return {"wins": 0, "losses": 0, "no_contests": 0}
     
     return record
+
+
+#helper function to get actual control time in seconds instead of a string
+def control_time_to_seconds(time_str):
+    minutes, seconds = time_str.split(":")
+    return int(minutes) * 60 + int(seconds)
+
+def get_fighter_averages(fighter_id):
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute("""
+        SELECT
+            AVG(sig_strike_pct) AS avg_sig_str_pct,
+            AVG(significant_strikes) AS avg_sig_str_landed,
+            AVG(total_strikes) AS avg_total_str_landed,
+            AVG(takedown_pct) AS avg_td_pct,
+            AVG(takedowns) AS avg_td_landed,
+            ARRAY_AGG(control_time) AS control_times_raw
+        FROM fight_stats
+        WHERE fighter_id = %s
+    """, (fighter_id,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    # Convert each "4:15" string to seconds, then average them ourselves
+    control_seconds = [control_time_to_seconds(t) for t in row["control_times_raw"]]
+    avg_ctrl_time = sum(control_seconds) / len(control_seconds)
+
+    return {
+        "avg_sig_str_pct": row["avg_sig_str_pct"],
+        "avg_sig_str_landed": row["avg_sig_str_landed"],
+        "avg_total_str_landed": row["avg_total_str_landed"],
+        "avg_td_pct": row["avg_td_pct"],
+        "avg_td_landed": row["avg_td_landed"],
+        "avg_ctrl_time": avg_ctrl_time,
+    }
+@app.get("/test-averages/{fighter_id}")
+def test_averages(fighter_id: int):
+    return get_fighter_averages(fighter_id)
