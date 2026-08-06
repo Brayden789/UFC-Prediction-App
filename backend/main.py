@@ -336,19 +336,36 @@ def predict_fight(red_fighter_id: int, blue_fighter_id: int):
     red_features = get_fighters_values(red_fighter_id)
     blue_features = get_fighters_values(blue_fighter_id)
 
-    combined_features = []
+    #the model alawys leaned to the red fighter so we are going to run the model twice
+    #one each way then averages the confidence numbers together
+    combined_1 = []
     for r_val, b_val in zip(red_features, blue_features):
-        combined_features.append(r_val)
-        combined_features.append(b_val)
+        combined_1.append(r_val)
+        combined_1.append(b_val)
 
-    #scale, same as training
-    scaled_features = scaler.transform([combined_features])
+    scaled_1 = scaler.transform([combined_1])
+    probs_1 = model.predict_proba(scaled_1)[0]
 
-    prediction = model.predict(scaled_features)[0]
-    probabilities = model.predict_proba(scaled_features)[0]
+    #now do the same thing but swap the red and blue fighter values
+    combined_2 = []
+    for b_val, r_val in zip(blue_features, red_features):
+        combined_2.append(b_val)
+        combined_2.append(r_val)
 
-    winner = "Red" if prediction == 1 else "Blue"
-    confidence = max(probabilities) * 100
+    scaled_2 = scaler.transform([combined_2])
+    probs_2 = model.predict_proba(scaled_2)[0]
+
+    #average the probabilities from both runs
+
+    fighter_a_win_prob = (probs_1[1] + probs_2[0]) / 2
+    fighter_b_win_prob = 1 - fighter_a_win_prob
+
+    if fighter_a_win_prob > fighter_b_win_prob:
+        winner = "Red"
+        confidence = fighter_a_win_prob * 100
+    else:
+        winner = "Blue"
+        confidence = fighter_b_win_prob * 100
 
     return {
         "winner": winner,
