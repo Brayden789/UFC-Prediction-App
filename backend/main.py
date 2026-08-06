@@ -199,10 +199,8 @@ def get_fighter_averages(fighter_id):
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cur.execute("""
         SELECT
-            AVG(sig_strike_pct) AS avg_sig_str_pct,
             AVG(significant_strikes) AS avg_sig_str_landed,
             AVG(total_strikes) AS avg_total_str_landed,
-            AVG(takedown_pct) AS avg_td_pct,
             AVG(takedowns) AS avg_td_landed,
             ARRAY_AGG(control_time) AS control_times_raw
         FROM fight_stats
@@ -212,15 +210,16 @@ def get_fighter_averages(fighter_id):
     cur.close()
     conn.close()
 
+    if row["control_times_raw"] is None:
+        raise HTTPException(status_code=404, detail="No fight stats found for this fighter")
+
     # Convert each "4:15" string to seconds, then average them ourselves
     control_seconds = [control_time_to_seconds(t) for t in row["control_times_raw"]]
     avg_ctrl_time = sum(control_seconds) / len(control_seconds)
 
     return {
-        "avg_sig_str_pct": row["avg_sig_str_pct"],
         "avg_sig_str_landed": row["avg_sig_str_landed"],
         "avg_total_str_landed": row["avg_total_str_landed"],
-        "avg_td_pct": row["avg_td_pct"],
         "avg_td_landed": row["avg_td_landed"],
         "avg_ctrl_time": avg_ctrl_time,
     }
