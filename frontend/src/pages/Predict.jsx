@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-import { searchFighters, getWeightClasses, getFightersByWeightClass } from '../services/api'
+import { searchFighters, getWeightClasses, getFightersByWeightClass, predictFight } from '../services/api'
 
 
 function Predict() {
@@ -26,12 +26,18 @@ useEffect(() => {
     .then(res => setWeightClasses(res.data))
     .catch(err => console.error(err))
 }, [])
-const handlePredict = () => {
-// this is just lpaceholder logic for no whne i do the actual prediction model it will be replaced with the actual model logic
-  const winner = Math.random() > 0.5 ? fighterA : fighterB
-  const confidence = Math.floor(Math.random() * 30) + 60 // random number between 60-89
+//updtating the actual logic to use the ML training
+const handlePredict = async () => {
+  try{
+    const res = await predictFight(fighterA.fighter_id, fighterB.fighter_id)
+    const {winner, confidence} = res.data
 
-  setPrediction({ winner, confidence })
+    const winningfighter = winner === 'Red' ? fighterA : fighterB
+
+    setPrediction({ winner: winningfighter, confidence })
+  } catch (err) {
+    console.error(err)
+  }
 }
 
 const handleSelectWeightClass = async (weightClass) => {

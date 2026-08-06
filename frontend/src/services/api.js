@@ -31,3 +31,10 @@ export const getFighterFights = (name) =>
 //Creates a get fighter record function that gets a fighter's record from their name from the API
 export const getFighterRecord = (name) =>
   api.get(`/fighters/name/${name}/record`)
+
+//creates a predict fighter fucction that gets the fighter predcition from the API
+export const predictFight = (redFighterId, blueFighterId) => {
+  return api.get('/predict', {
+    params:{red_fighter_id: redFighterId, blue_fighter_id: blueFighterId}}
+  )
+}
