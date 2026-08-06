@@ -1,9 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-import psycopg2
 import psycopg2.extras
 from dotenv import load_dotenv
 import os
+import joblib
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
@@ -307,14 +307,50 @@ def get_fighter_record_stats(fighter_id):
         "current_win_streak": current_win_streak,
     }
 
-@app.get("/test-record/{fighter_id}")
-def test_record(fighter_id: int):
-    return get_fighter_record_stats(fighter_id)
+#functon to get the fighter values
+def get_fighters_values(fighter_id):
+    physicals = get_fighter_physicals(fighter_id)
+    averages = get_fighter_averages(fighter_id)
+    record = get_fighter_record_stats(fighter_id)
 
-@app.get("/test-physicals/{fighter_id}")
-def test_physicals(fighter_id: int):
-    return get_fighter_physicals(fighter_id)
+    return[
+        averages["avg_sig_str_landed"],
+        averages["avg_total_str_landed"],
+        averages["avg_td_landed"],
+        averages["avg_ctrl_time"],
+        physicals["height"],
+        physicals["reach"],
+        physicals["weight"],
+        physicals["age"],
+        record["wins"],
+        record["losses"],
+        record["current_win_streak"]
+    ]
 
-@app.get("/test-averages/{fighter_id}")
-def test_averages(fighter_id: int):
-    return get_fighter_averages(fighter_id)
+#load model and scaler ONCE server starts, not every time a prediction is made
+model = joblib.load("ml/model.pkl")
+scaler = joblib.load("ml/scaler.pkl")
+
+@app.get("/predict")
+def predict_fight(red_fighter_id: int, blue_fighter_id: int):
+    red_features = get_fighters_values(red_fighter_id)
+    blue_features = get_fighters_values(blue_fighter_id)
+
+    combined_features = []
+    for r_val, b_val in zip(red_features, blue_features):
+        combined_features.append(r_val)
+        combined_features.append(b_val)
+
+    #scale, same as training
+    scaled_features = scaler.transform([combined_features])
+
+    prediction = model.predict(scaled_features)[0]
+    probabilities = model.predict_proba(scaled_features)[0]
+
+    winner = "Red" if prediction == 1 else "Blue"
+    confidence = max(probabilities) * 100
+
+    return {
+        "winner": winner,
+        "confidence": round(confidence, 1)
+    }
