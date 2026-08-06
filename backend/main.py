@@ -194,6 +194,28 @@ def control_time_to_seconds(time_str):
     minutes, seconds = time_str.split(":")
     return int(minutes) * 60 + int(seconds)
 
+#helperfunction to convert height to centimeters
+def height_to_cm(height_str):
+    if not height_str or height_str.strip() == "":
+        return None
+    feet, inches = height_str.split("'")
+    inches = inches.replace('"', "").strip()
+    total_inches = int(feet.strip()) * 12 + int(inches)
+    return round(total_inches * 2.54, 2)
+
+#helper function to convert reach to centimeters
+def reach_to_cm(reach_str):
+    if not reach_str or reach_str.strip() == "":
+        return None
+    inches = reach_str.replace('"', '').strip()
+    return round(int(inches) * 2.54, 2)
+
+#helper fucntion to convert weight to pounds
+def weight_to_lbs(weight_str):
+    if not weight_str or weight_str.strip() == "":
+        return None
+    return float(weight_str.replace("lbs.", "").strip())
+
 def get_fighter_averages(fighter_id):
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -223,6 +245,36 @@ def get_fighter_averages(fighter_id):
         "avg_td_landed": row["avg_td_landed"],
         "avg_ctrl_time": avg_ctrl_time,
     }
+
+
+
+def get_fighter_physicals(fighter_id):
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute("""
+        SELECT height, reach, weight, 
+        Extract(YEAR FROM AGE(CURRENT_DATE, date_of_birth)) AS age
+        FROM fighters
+        WHERE fighter_id = %s
+    """, (fighter_id,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    if row is None:
+        raise HTTPException(status_code=404, detail="Fighter not found")
+
+    return {
+        "height": height_to_cm(row["height"]),
+        "reach": reach_to_cm(row["reach"]),
+        "weight": weight_to_lbs(row["weight"]),
+        "age": row["age"],
+    }
+
+@app.get("/test-physicals/{fighter_id}")
+def test_physicals(fighter_id: int):
+    return get_fighter_physicals(fighter_id)
+
 @app.get("/test-averages/{fighter_id}")
 def test_averages(fighter_id: int):
     return get_fighter_averages(fighter_id)
