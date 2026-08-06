@@ -271,6 +271,46 @@ def get_fighter_physicals(fighter_id):
         "age": row["age"],
     }
 
+def get_fighter_record_stats(fighter_id):
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute("""
+        SELECT f.winner_id, e.date
+        FROM fights f
+        JOIN fight_stats fs ON fs.fight_id = f.fight_id
+        JOIN events e ON e.event_id = f.event_id
+        WHERE fs.fighter_id = %s
+        ORDER BY e.date DESC
+    """, (fighter_id,))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    if not rows:
+        raise HTTPException(status_code=404, detail="No fight history found for this fighter")
+
+    wins = sum(1 for r in rows if r["winner_id"] == fighter_id)
+    losses = sum(1 for r in rows if r["winner_id"] != fighter_id and r["winner_id"] is not None)
+
+    # Walk from most recent fight backward, counting consecutive wins
+    # until we hit a loss (or run out of fights).
+    current_win_streak = 0
+    for r in rows:
+        if r["winner_id"] == fighter_id:
+            current_win_streak += 1
+        else:
+            break
+
+    return {
+        "wins": wins,
+        "losses": losses,
+        "current_win_streak": current_win_streak,
+    }
+
+@app.get("/test-record/{fighter_id}")
+def test_record(fighter_id: int):
+    return get_fighter_record_stats(fighter_id)
+
 @app.get("/test-physicals/{fighter_id}")
 def test_physicals(fighter_id: int):
     return get_fighter_physicals(fighter_id)
